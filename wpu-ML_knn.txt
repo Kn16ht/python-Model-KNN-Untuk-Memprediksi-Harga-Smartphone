@@ -1,0 +1,98 @@
+#import data train
+import pandas as pd
+import numpy as np
+
+df_train = pd.read_csv('train.csv')
+df_train
+
+#import data test
+import pandas as pd
+df_test = pd.read_csv('test.csv')
+df_test
+
+#handling missing value on data train ('kecepatan_clock')
+df_train['kecepatan_clock']= df_train['kecepatan_clock'].fillna(df_train['kecepatan_clock'].mean())
+df_train
+
+
+#handling missing value on data train ('panjang_layar') with modus
+df_train['panjang_layar'].value_counts()
+df_train['panjang_layar'] = df_train['panjang_layar'].fillna(17.0)
+df_train['panjang_layar']
+df_train
+
+#tracing missing value on data train
+df_train.isna().sum()
+
+#Visualization data with seaborn
+import seaborn as sns
+sns.set(rc={'figure.figsize':(16,8)})
+
+sns.catplot(x='kamera_depan', y='kamera_belakang_mp', hue='price_range', kind="bar", data=df_train, height=17)
+
+sns.set(rc={'figure.figsize':(16,8)})
+
+sns.catplot(x='panjang_layar', y='lebar_layar', hue='price_range', kind="bar", data=df_train, height=17)
+
+sns.set(rc={'figure.figsize':(9,7)})
+
+sns.catplot(x='bluetooth', y='dual_sim', hue='price_range', kind="bar", data=df_train, height=10)
+
+sns.pairplot(df_train, hue='price_range')
+
+sns.set(rc={'figure.figsize':(13, 11)})
+sns.heatmap(df_train.corr(), annot=True, fmt='.1f', linewidths=4)
+
+#Encoding data
+#('four_g')
+obj= {
+    'Ya':1,
+    'Tidak':0
+}
+df_train['four_g']=df_train['four_g'].replace(obj)
+
+#Price range
+obj_list= {'0-<1000k':0,
+           '1000k-<2000k':1,
+           '2000k-3000k':2,
+           '>3000k':3}
+df_train['price_range']=df_train['price_range'].replace(obj_list)
+
+#split data feature and target
+y = df_train['price_range']
+x = df_train.drop(['price_range'], axis=1)
+
+#divide data in to train, test
+from sklearn.model_selection import train_test_split
+
+x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.20)
+
+#Selecting algoritma
+from sklearn.neighbors import KNeighborsClassifier
+
+modelknn = KNeighborsClassifier (n_neighbors=5,
+                                 algorithm='auto',
+                                 metric='minkowski',
+                                 p=2,
+                                 leaf_size=30,
+                                 weights='distance')
+                                 
+#Train algotitma
+modelknn.fit(x_train,y_train)
+
+#Predict data with algoritma
+y_prediksi = modelknn.predict(df_test)
+y_prediksi
+
+#Evaluating model
+from sklearn.model_selection import cross_val_score
+from sklearn.metrics import f1_score
+
+cvs = cross_val_score(modelknn, x_train,y_train, cv=10, scoring='f1_macro')
+cvs
+
+#Submission to csv 
+submission = pd.DataFrame({'index':df_test['index'],
+                           'price_range':y_prediksi})
+submission.to_csv('prediksi_ke_2.csv', index=False)
+
